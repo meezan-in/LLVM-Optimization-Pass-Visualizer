@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLVM Pass Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+        }
+        select {
+            width: 100%;
+            padding: 5px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>LLVM Pass Visualizer</h1>
+    <form method="POST">
+        <div>
+            <label for="source">C++ Code:</label>
+            <textarea id="source" name="source" placeholder="Enter your C++ code here..."></textarea>
+        </div>
+        <div>
+            <label for="opt_pass">Optimization Pass:</label>
+            <select id="opt_pass" name="opt_pass">
+                <option value="mem2reg">Memory to Register (mem2reg)</option>
+                <option value="loop-unroll">Loop Unrolling</option>
+                <option value="simplifycfg">Control Flow Simplification</option>
+            </select>
+        </div>
+        <button type="submit">Run Optimization Pass</button>
+    </form>
+</body>
+</html> 

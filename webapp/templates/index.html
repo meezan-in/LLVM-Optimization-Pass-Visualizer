@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLVM Pass Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 2.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .result-section {
+            margin-top: 2rem;
+        }
+
+        .result-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            background: #e2e8f0;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .ai-summary {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary-color);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .ai-summary h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .key-changes {
+            margin-top: 1rem;
+        }
+
+        .key-changes ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .key-changes li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .key-changes li:last-child {
+            border-bottom: none;
+        }
+
+        .impact-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .impact-high {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .impact-medium {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .impact-low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .input-methods {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-method {
+            flex: 1;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-method:hover {
+            border-color: var(--primary-color);
+        }
+
+        .input-method.active {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+
+        .input-method h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text-color);
+        }
+
+        .input-method p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .file-upload {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 1rem;
+            background: #f8fafc;
+            border: 2px dashed #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+
+        .file-name {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .code-editor {
+            position: relative;
+        }
+
+        .code-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .code-editor-header h3 {
+            margin: 0;
+        }
+
+        .example-code {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .example-code:hover {
+            color: #1d4ed8;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LLVM Optimization Pass Visualizer</h1>
+            <p>Visualize how LLVM optimization passes transform your code</p>
+        </div>
+
+        <div class="card">
+            <form method="POST" id="optimizationForm" enctype="multipart/form-data">
+                <div class="input-methods">
+                    <div class="input-method active" onclick="switchInputMethod('code')">
+                        <h3>Write Code</h3>
+                        <p>Write or paste your C++ code directly</p>
+                    </div>
+                    <div class="input-method" onclick="switchInputMethod('file')">
+                        <h3>Upload File</h3>
+                        <p>Upload your C++ source file</p>
+                    </div>
+                </div>
+
+                <div id="codeInput" class="form-group">
+                    <div class="code-editor">
+                        <div class="code-editor-header">
+                            <h3>C++ Code</h3>
+                            <span class="example-code" onclick="loadExampleCode()">Load Example</span>
+                        </div>
+                        <textarea id="source" name="source" placeholder="// Write your C++ code here&#10;&#10;int main() {&#10;    // Your code...&#10;    return 0;&#10;}">// Write your C++ code here</textarea>
+                    </div>
+                </div>
+
+                <div id="fileInput" class="form-group" style="display: none;">
+                    <label for="cppFile">Upload C++ File:</label>
+                    <input type="file" id="cppFile" name="cppFile" class="file-upload" accept=".cpp,.cc,.cxx">
+                    <label for="cppFile" class="file-upload-label">
+                        <div>Click to upload or drag and drop</div>
+                        <div class="file-name">No file chosen</div>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="opt_pass">Optimization Pass:</label>
+                    <select id="opt_pass" name="opt_pass">
+                        <option value="mem2reg">Memory to Register (mem2reg)</option>
+                        <option value="loop-unroll">Loop Unrolling</option>
+                        <option value="simplifycfg">Control Flow Simplification</option>
+                    </select>
+                </div>
+
+                <button type="submit">Run Optimization Pass</button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Running optimization pass...</p>
+            </div>
+        </div>
+
+        {% if result %}
+        <div class="card result-section">
+            <div class="result-tabs">
+                <button class="tab-button active" onclick="showTab('raw')">Raw Output</button>
+                <button class="tab-button" onclick="showTab('summary')">AI Summary</button>
+            </div>
+
+            <div id="raw" class="tab-content active">
+                <h2>Optimization Result</h2>
+                <pre>{{ result }}</pre>
+            </div>
+
+            <div id="summary" class="tab-content">
+                <h2>AI Analysis</h2>
+                <div class="ai-summary">
+                    <h3>Optimization Summary</h3>
+                    <p>{{ ai_summary if ai_summary else "No analysis available." }}</p>
+                    
+                    {% if key_changes %}
+                    <div class="key-changes">
+                        <h3>Key Changes</h3>
+                        <ul>
+                            {% for change in key_changes %}
+                            <li>
+                                {{ change.description }}
+                                <span class="impact-badge impact-{{ change.impact }}">{{ change.impact }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="key-changes">
+                        <h3>Key Changes</h3>
+                        <p>No significant changes detected.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <h3>Processing Your Code</h3>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script>
+        function switchInputMethod(method) {
+            const codeInput = document.getElementById('codeInput');
+            const fileInput = document.getElementById('fileInput');
+            const methods = document.querySelectorAll('.input-method');
+            
+            methods.forEach(m => m.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            if (method === 'code') {
+                codeInput.style.display = 'block';
+                fileInput.style.display = 'none';
+            } else {
+                codeInput.style.display = 'none';
+                fileInput.style.display = 'block';
+            }
+        }
+
+        function loadExampleCode() {
+            const exampleCode = `int main() {
+    int sum = 0;
+    for (int i = 0; i < 10; i++) {
+        sum += i;
+    }
+    return sum;
+}`;
+            document.getElementById('source').value = exampleCode;
+        }
+
+        document.getElementById('cppFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'No file chosen';
+            document.querySelector('.file-name').textContent = fileName;
+        });
+
+        document.getElementById('optimizationForm').addEventListener('submit', function() {
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('loadingOverlay').classList.add('active');
+        });
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.file-upload-label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('active');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('active');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('cppFile').files = files;
+            document.querySelector('.file-name').textContent = files[0].name;
+        }
+    </script>
+</body>
+</html>

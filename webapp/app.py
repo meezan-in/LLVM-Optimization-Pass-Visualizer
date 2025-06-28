@@ -21,7 +21,7 @@ except Exception as e:
 
 # Configure upload settings
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'cpp', 'cc', 'cxx'}
+ALLOWED_EXTENSIONS = {'cpp', 'cc', 'cxx'}   # Allowed file extensions
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
